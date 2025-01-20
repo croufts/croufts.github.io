@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contrôle Affichage OLED</title>
+    <!-- Import Firebase -->
+    <script type="module">
+        // Import des fonctions dont nous avons besoin depuis Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Configuration Firebase - À REMPLACER avec vos informations
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjlDsaDp7OjpUJUmPlBhIcXfMEGG3_TJw",
+            authDomain: "nodemcu-fa6eb.firebaseapp.com",
+            databaseURL: "https://nodemcu-fa6eb-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "nodemcu-fa6eb",
+        };
+
+        // Initialisation Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Rendre la fonction sendText disponible globalement
+        window.sendText = function() {
+            const text = document.getElementById('textInput').value;
+            set(ref(database, '/'), {
+                message: text
+            })
+            .then(() => alert('Message envoyé !'))
+            .catch((error) => alert('Erreur: ' + error));
+        };
+    </script>
+    <style>
+        body { 
+            font-family: Arial; 
+            text-align: center; 
+            margin: 20px; 
+        }
+        input, button { 
+            padding: 10px; 
+            margin: 10px; 
+        }
+        button { 
+            background-color: #4CAF50; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Contrôle Affichage OLED</h1>
+    <input type="text" id="textInput" placeholder="Entrez votre texte">
+    <button onclick="sendText()">Envoyer</button>
+</body>
+</html>
