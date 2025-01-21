@@ -2,13 +2,12 @@
 <html>
 <head>
     <title>Contrôle Affichage OLED</title>
-    <!-- Import Firebase -->
     <script type="module">
         // Import des fonctions dont nous avons besoin depuis Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Configuration Firebase - À REMPLACER avec vos informations
+        // Configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAjlDsaDp7OjpUJUmPlBhIcXfMEGG3_TJw",
             authDomain: "nodemcu-fa6eb.firebaseapp.com",
@@ -20,37 +19,184 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Rendre la fonction sendText disponible globalement
         window.sendText = function() {
             const text = document.getElementById('textInput').value;
             set(ref(database, '/'), {
                 message: text
             })
-            .then(() => alert('Message envoyé !'))
-            .catch((error) => alert('Erreur: ' + error));
+            .then(() => {
+                const notification = document.getElementById('notification');
+                notification.textContent = 'Message envoyé !';
+                notification.style.opacity = '1';
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, 2000);
+            })
+            .catch((error) => {
+                const notification = document.getElementById('notification');
+                notification.textContent = 'Erreur: ' + error;
+                notification.style.opacity = '1';
+                notification.style.backgroundColor = '#ff4444';
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, 2000);
+            });
+        };
+
+        // Animation des pixels
+        window.onload = function() {
+            const canvas = document.getElementById('pixelCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            const pixels = [];
+            const pixelCount = 50;
+
+            for (let i = 0; i < pixelCount; i++) {
+                pixels.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 3 + 1,
+                    speedX: (Math.random() - 0.5) * 2,
+                    speedY: (Math.random() - 0.5) * 2
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                pixels.forEach(pixel => {
+                    pixel.x += pixel.speedX;
+                    pixel.y += pixel.speedY;
+
+                    if (pixel.x < 0 || pixel.x > canvas.width) pixel.speedX *= -1;
+                    if (pixel.y < 0 || pixel.y > canvas.height) pixel.speedY *= -1;
+
+                    ctx.fillStyle = 'rgba(255, 192, 203, 0.5)';
+                    ctx.beginPath();
+                    ctx.arc(pixel.x, pixel.y, pixel.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
         };
     </script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body { 
-            font-family: Arial; 
-            text-align: center; 
-            margin: 20px; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff6b6b, #ff8585);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            position: relative;
         }
-        input, button { 
-            padding: 10px; 
-            margin: 10px; 
+
+        #pixelCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
         }
-        button { 
-            background-color: #4CAF50; 
-            color: white; 
-            border: none; 
-            cursor: pointer; 
+
+        .container {
+            position: relative;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input {
+            width: 300px;
+            padding: 1rem;
+            margin: 1rem 0;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #ff6b6b;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input:focus {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        button {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 25px;
+            background: #ff4757;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background: #ff6b6b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 3;
         }
     </style>
 </head>
 <body>
-    <h1>Contrôle Affichage OLED</h1>
-    <input type="text" id="textInput" placeholder="Entrez votre texte">
-    <button onclick="sendText()">Envoyer</button>
+    <canvas id="pixelCanvas"></canvas>
+    <div class="container">
+        <h1>Contrôle Affichage OLED</h1>
+        <input type="text" id="textInput" placeholder="Entrez votre texte">
+        <button onclick="sendText()">Envoyer</button>
+    </div>
+    <div id="notification"></div>
 </body>
 </html>
