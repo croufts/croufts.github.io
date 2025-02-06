@@ -3,10 +3,11 @@
 <head>
     <title>Contrôle Affichage OLED</title>
     <script type="module">
-        // Import des fonctions Firebase nécessaires
+        // Import des fonctions dont nous avons besoin depuis Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // Configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAjlDsaDp7OjpUJUmPlBhIcXfMEGG3_TJw",
             authDomain: "nodemcu-fa6eb.firebaseapp.com",
@@ -14,57 +15,48 @@
             projectId: "nodemcu-fa6eb",
         };
 
+        // Initialisation Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Fonction de connexion
-        window.login = function() {
-            const password = document.getElementById('passwordInput').value;
-            // Remplacez ce mot de passe par celui de votre choix
-            const correctPassword = "MATENINprout";
-
-            if (password === correctPassword) {
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('mainContainer').style.display = 'block';
-                showNotification('Connexion réussie !', 'success');
-            } else {
-                showNotification('Mot de passe incorrect', 'error');
-            }
-        };
-
-        // Fonction de déconnexion
-        window.logout = function() {
-            document.getElementById('loginContainer').style.display = 'block';
-            document.getElementById('mainContainer').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-            showNotification('Déconnexion effectuée', 'success');
-        };
-
-        // Envoi du texte à l'OLED
         window.sendText = function() {
             const text = document.getElementById('textInput').value;
+            if (!text.trim()) return; // Ne rien faire si le texte est vide
+            
             set(ref(database, '/'), {
                 message: text
             })
-            .then(() => showNotification('Message envoyé !', 'success'))
-            .catch((error) => showNotification('Erreur: ' + error, 'error'));
+            .then(() => {
+                const notification = document.getElementById('notification');
+                notification.textContent = 'Message envoyé !';
+                notification.style.opacity = '1';
+                document.getElementById('textInput').value = ''; // Vider l'input après envoi
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, 2000);
+            })
+            .catch((error) => {
+                const notification = document.getElementById('notification');
+                notification.textContent = 'Erreur: ' + error;
+                notification.style.opacity = '1';
+                notification.style.backgroundColor = '#ff4444';
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                }, 2000);
+            });
         };
-
-        // Gestion des notifications
-        function showNotification(message, type) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.style.opacity = '1';
-            notification.style.backgroundColor = type === 'success' ? '#4CAF50' : '#ff4444';
-            setTimeout(() => {
-                notification.style.opacity = '0';
-            }, 2000);
-        }
 
         // Animation des pixels
         window.onload = function() {
             const canvas = document.getElementById('pixelCanvas');
             const ctx = canvas.getContext('2d');
+
+            // Ajout de l'événement keypress pour l'input
+            document.getElementById('textInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendText();
+                }
+            });
 
             function resizeCanvas() {
                 canvas.width = window.innerWidth;
@@ -182,7 +174,6 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            margin: 0.5rem;
         }
 
         button:hover {
@@ -207,45 +198,15 @@
             transition: opacity 0.3s ease;
             z-index: 3;
         }
-
-        #mainContainer {
-            display: none;
-        }
-
-        .logout-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 3;
-            background: rgba(255, 71, 87, 0.8);
-        }
-
-        #passwordInput {
-            -webkit-text-security: disc;
-            text-security: disc;
-        }
     </style>
 </head>
 <body>
     <canvas id="pixelCanvas"></canvas>
-    
-    <!-- Page de connexion -->
-    <div id="loginContainer" class="container">
-        <h1>Connexion</h1>
-        <input type="password" id="passwordInput" placeholder="Mot de passe">
-        <button onclick="login()">Se connecter</button>
+    <div class="container">
+        <h1>Contrôle Affichage OLED</h1>
+        <input type="text" id="textInput" placeholder="Entrez votre texte">
+        <button onclick="sendText()">Envoyer</button>
     </div>
-
-    <!-- Interface principale -->
-    <div id="mainContainer">
-        <button onclick="logout()" class="logout-btn">Déconnexion</button>
-        <div class="container">
-            <h1>Contrôle Affichage OLED</h1>
-            <input type="text" id="textInput" placeholder="Entrez votre texte">
-            <button onclick="sendText()">Envoyer</button>
-        </div>
-    </div>
-
     <div id="notification"></div>
 </body>
 </html>
