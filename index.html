@@ -1,106 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>Contrôle Affichage OLED</title>
-    <script type="module">
-        // Import des fonctions dont nous avons besoin depuis Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-        // Configuration Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAjlDsaDp7OjpUJUmPlBhIcXfMEGG3_TJw",
-            authDomain: "nodemcu-fa6eb.firebaseapp.com",
-            databaseURL: "https://nodemcu-fa6eb-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "nodemcu-fa6eb",
-        };
-
-        // Initialisation Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        window.sendText = function() {
-            const text = document.getElementById('textInput').value;
-            if (!text.trim()) return; // Ne rien faire si le texte est vide
-            
-            set(ref(database, '/'), {
-                message: text
-            })
-            .then(() => {
-                const notification = document.getElementById('notification');
-                notification.textContent = 'Message envoyé !';
-                notification.style.opacity = '1';
-                document.getElementById('textInput').value = ''; // Vider l'input après envoi
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                }, 2000);
-            })
-            .catch((error) => {
-                const notification = document.getElementById('notification');
-                notification.textContent = 'Erreur: ' + error;
-                notification.style.opacity = '1';
-                notification.style.backgroundColor = '#ff4444';
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                }, 2000);
-            });
-        };
-
-        // Animation des pixels
-        window.onload = function() {
-            const canvas = document.getElementById('pixelCanvas');
-            const ctx = canvas.getContext('2d');
-
-            // Ajout de l'événement keypress pour l'input
-            document.getElementById('textInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    sendText();
-                }
-            });
-
-            function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-
-            const pixels = [];
-            const pixelCount = 50;
-
-            for (let i = 0; i < pixelCount; i++) {
-                pixels.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    size: Math.random() * 3 + 1,
-                    speedX: (Math.random() - 0.5) * 2,
-                    speedY: (Math.random() - 0.5) * 2
-                });
-            }
-
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                pixels.forEach(pixel => {
-                    pixel.x += pixel.speedX;
-                    pixel.y += pixel.speedY;
-
-                    if (pixel.x < 0 || pixel.x > canvas.width) pixel.speedX *= -1;
-                    if (pixel.y < 0 || pixel.y > canvas.height) pixel.speedY *= -1;
-
-                    ctx.fillStyle = 'rgba(255, 192, 203, 0.5)';
-                    ctx.beginPath();
-                    ctx.arc(pixel.x, pixel.y, pixel.size, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-
-                requestAnimationFrame(animate);
-            }
-
-            animate();
-        };
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Flashcards</title>
     <style>
         * {
             margin: 0;
@@ -108,105 +11,559 @@
             box-sizing: border-box;
         }
 
-        body { 
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            background: linear-gradient(135deg, #ff6b6b, #ff8585);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            position: relative;
-        }
-
-        #pixelCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            pointer-events: none;
+            padding: 20px;
         }
 
         .container {
-            position: relative;
-            z-index: 2;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
             backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         h1 {
-            margin-bottom: 2rem;
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
             font-size: 2.5rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        input {
-            width: 300px;
-            padding: 1rem;
-            margin: 1rem 0;
-            border: none;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #ff6b6b;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            outline: none;
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
-        input:focus {
-            transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-        }
-
-        button {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 25px;
-            background: #ff4757;
+        .stat-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
-            font-size: 1rem;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .add-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        button:hover {
-            background: #ff6b6b;
+        .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
         }
 
-        button:active {
+        .btn:active {
             transform: translateY(0);
         }
 
-        #notification {
+        .cards-list {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+
+        .card-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .card-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .card-question {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .card-answer {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .mastery-level {
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .level-0 { background: #e74c3c; }
+        .level-1 { background: #f39c12; }
+        .level-2 { background: #27ae60; }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .export-info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #2d5a2d;
+        }
+
+        .url-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+
+        .notification {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 1rem 2rem;
-            background-color: #4CAF50;
-            color: white;
+            padding: 15px 20px;
             border-radius: 10px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 3;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.success {
+            background: #27ae60;
+        }
+
+        .notification.show {
+            transform: translateX(0);
         }
     </style>
 </head>
 <body>
-    <canvas id="pixelCanvas"></canvas>
     <div class="container">
-        <h1>Contrôle Affichage OLED</h1>
-        <input type="text" id="textInput" placeholder="Entrez votre texte">
-        <button onclick="sendText()">Envoyer</button>
+        <h1>🎯 Gestionnaire de Flashcards</h1>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalCards">0</div>
+                <div>Total des cartes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeCards">0</div>
+                <div>Cartes actives</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="masteredCards">0</div>
+                <div>Cartes maîtrisées</div>
+            </div>
+        </div>
+
+        <div class="add-section">
+            <h2>➕ Ajouter une nouvelle flashcard</h2>
+            <div class="form-group">
+                <label for="question">Question :</label>
+                <textarea id="question" placeholder="Ex: Quelle est la capitale de la France ?"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="answer">Réponse :</label>
+                <textarea id="answer" placeholder="Ex: Paris"></textarea>
+            </div>
+            <button class="btn" onclick="addCard()">Ajouter la carte</button>
+        </div>
+
+        <div class="actions">
+            <button class="btn" onclick="exportData()">📤 Exporter les données</button>
+            <button class="btn" onclick="importData()">📥 Importer des données</button>
+            <button class="btn" onclick="resetProgress()">🔄 Réinitialiser les progrès</button>
+            <button class="btn" onclick="clearAll()">🗑️ Supprimer tout</button>
+        </div>
+
+        <div class="export-info">
+            <strong>URL de l'API pour votre ESP32 :</strong>
+            <div class="url-display" id="apiUrl">
+                Activez GitHub Pages pour voir l'URL
+            </div>
+            <p><small>Copiez cette URL dans votre code ESP32 (variable apiURL)</small></p>
+        </div>
+
+        <div class="cards-list">
+            <h2>📚 Liste des flashcards</h2>
+            <div id="cardsList"></div>
+        </div>
     </div>
-    <div id="notification"></div>
+
+    <input type="file" id="fileInput" style="display: none;" accept=".json" onchange="handleFileImport(event)">
+
+    <script>
+        let flashcards = [];
+
+        // Initialisation
+        window.onload = function() {
+            loadCards();
+            updateApiUrl();
+        };
+
+        // Mise à jour de l'URL de l'API
+        function updateApiUrl() {
+            const url = window.location.origin + window.location.pathname.replace('index.html', '') + 'cards.json';
+            document.getElementById('apiUrl').textContent = url;
+        }
+
+        // Charger les cartes depuis localStorage
+        function loadCards() {
+            const saved = localStorage.getItem('flashcards');
+            if (saved) {
+                flashcards = JSON.parse(saved);
+            }
+            updateDisplay();
+            generateJSON();
+        }
+
+        // Sauvegarder les cartes
+        function saveCards() {
+            localStorage.setItem('flashcards', JSON.stringify(flashcards));
+            generateJSON();
+        }
+
+        // Ajouter une nouvelle carte
+        function addCard() {
+            const question = document.getElementById('question').value.trim();
+            const answer = document.getElementById('answer').value.trim();
+
+            if (!question || !answer) {
+                alert('Veuillez remplir la question et la réponse');
+                return;
+            }
+
+            const newCard = {
+                id: Date.now(),
+                question: question,
+                answer: answer,
+                mastery: 0,
+                created: new Date().toISOString()
+            };
+
+            flashcards.push(newCard);
+            saveCards();
+            updateDisplay();
+
+            // Réinitialiser le formulaire
+            document.getElementById('question').value = '';
+            document.getElementById('answer').value = '';
+
+            showNotification('Carte ajoutée avec succès!');
+        }
+
+        // Supprimer une carte
+        function deleteCard(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette carte ?')) {
+                flashcards = flashcards.filter(card => card.id !== id);
+                saveCards();
+                updateDisplay();
+                showNotification('Carte supprimée');
+            }
+        }
+
+        // Mettre à jour l'affichage
+        function updateDisplay() {
+            updateStats();
+            displayCards();
+        }
+
+        // Mettre à jour les statistiques
+        function updateStats() {
+            const total = flashcards.length;
+            const mastered = flashcards.filter(card => card.mastery >= 2).length;
+            const active = total - mastered;
+
+            document.getElementById('totalCards').textContent = total;
+            document.getElementById('activeCards').textContent = active;
+            document.getElementById('masteredCards').textContent = mastered;
+        }
+
+        // Afficher les cartes
+        function displayCards() {
+            const container = document.getElementById('cardsList');
+            
+            if (flashcards.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Aucune flashcard. Commencez par en ajouter une!</p>';
+                return;
+            }
+
+            container.innerHTML = flashcards.map(card => `
+                <div class="card-item">
+                    <div class="card-question">${escapeHtml(card.question)}</div>
+                    <div class="card-answer">${escapeHtml(card.answer)}</div>
+                    <div class="card-meta">
+                        <span class="mastery-level level-${card.mastery}">
+                            ${getMasteryText(card.mastery)}
+                        </span>
+                        <button class="delete-btn" onclick="deleteCard(${card.id})">
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Obtenir le texte du niveau de maîtrise
+        function getMasteryText(level) {
+            switch(level) {
+                case 0: return 'Nouveau';
+                case 1: return 'En cours';
+                case 2: return 'Maîtrisé';
+                default: return 'Inconnu';
+            }
+        }
+
+        // Échapper le HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Générer le fichier JSON pour l'ESP32
+        function generateJSON() {
+            const data = {
+                cards: flashcards,
+                lastUpdate: new Date().toISOString(),
+                version: "1.0"
+            };
+
+            // Créer le blob et le télécharger automatiquement
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            
+            // Créer un lien de téléchargement temporaire
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cards.json';
+            
+            // Simuler un clic pour télécharger (pour GitHub Pages)
+            // Note: Sur GitHub Pages, vous devrez manuellement mettre à jour le fichier cards.json
+        }
+
+        // Exporter les données
+        function exportData() {
+            const data = {
+                cards: flashcards,
+                exportDate: new Date().toISOString(),
+                version: "1.0"
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'flashcards-backup.json';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showNotification('Données exportées!');
+        }
+
+        // Importer des données
+        function importData() {
+            document.getElementById('fileInput').click();
+        }
+
+        // Gérer l'import de fichier
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.cards && Array.isArray(data.cards)) {
+                        if (confirm(`Importer ${data.cards.length} cartes ? Cela remplacera les données actuelles.`)) {
+                            flashcards = data.cards;
+                            saveCards();
+                            updateDisplay();
+                            showNotification('Données importées avec succès!');
+                        }
+                    } else {
+                        alert('Format de fichier invalide');
+                    }
+                } catch (error) {
+                    alert('Erreur lors de la lecture du fichier');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Réinitialiser les progrès
+        function resetProgress() {
+            if (confirm('Réinitialiser tous les progrès ? Les cartes seront conservées mais remises à zéro.')) {
+                flashcards.forEach(card => card.mastery = 0);
+                saveCards();
+                updateDisplay();
+                showNotification('Progrès réinitialisés!');
+            }
+        }
+
+        // Supprimer tout
+        function clearAll() {
+            if (confirm('Supprimer toutes les flashcards ? Cette action est irréversible.')) {
+                flashcards = [];
+                saveCards();
+                updateDisplay();
+                showNotification('Toutes les cartes supprimées');
+            }
+        }
+
+        // Afficher une notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification success';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        // Gestion des raccourcis clavier
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                addCard();
+            }
+        });
+    </script>
 </body>
 </html>
